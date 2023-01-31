@@ -1,3 +1,9 @@
+/** Code for Assignment 1
+* Qubit state representation using a tangible user interface
+* @author José Ossorio V01010285
+*/
+
+// Setting pins for buttons to use quantum gates
 int xBtnPin = 8;
 int hBtnPin = 9;
 int mBtnPin = 10;
@@ -6,6 +12,9 @@ int xLastBtnState = 1;
 int hLastBtnState = 1;
 int mLastBtnState = 1;
 
+// Struct to group the attributes of a qubit. A qubit is described by a statevector with two amplitudes: ampKet0 and ampKet1
+// Each of the kets has a led pin and an interval that determines when the respective led will blink.
+// The higher the amplitude, the faster it will blink
 struct qubit {
   int pinKet0;
   int pinKet1;
@@ -18,19 +27,38 @@ struct qubit {
   double intervalKet1;
 };
 
+// variables used to track time of the last blink for each ket
 unsigned long previousMillis0 = 0;
 unsigned long previousMillis1 = 0;
 
-// Code snippet taken from https://forum.arduino.cc/t/increasing-probability-with-a-number/358459/5
+/** Code snippet taken from https://forum.arduino.cc/t/increasing-probability-with-a-number/358459/5
+* Biased random probability for collapsing the state of the qubit based on the amplitudes of each component.
+* For example, if ket 1 has probability of 80%, the threshold will be 80 and the maximum will always be 100.
+* That way, if we generate a random number between 0 and 100, 80% of the time it will be less than or equal to 100, returning true
+* @param: threshold - probability bias
+* @param: maximum - the maximum probability (always 100)
+* @return: boolean indicating whether the generated number is below the threshold
+*/
 bool chance(int threshold, int maximum) {
   long ran = random(maximum);
   return ran <= threshold;
 }
 
+/**
+* Helper function to calculate the probability of collapsing the qubit to a specific state based on the amplitude of that state.
+* The probability is calculated by squaring the absolute value of the amplitude.
+* @param: amplitude - the amplitude of a component of the qubit
+* @return: double - the probability
+*/
 double prob(double amplitude) {
   return abs(amplitude) * abs(amplitude);
 }
 
+/**
+* Helper function to calculte the product of a 2x2 matrix and a 2-vector
+* @param: m - the matrix
+* @param: v - the vector
+*/
 void matrixByVector(double m[][2], double v[]) {
   double result[2] = { NULL, NULL };
   for (int i = 0; i < 2; i++) {
@@ -42,9 +70,12 @@ void matrixByVector(double m[][2], double v[]) {
   v[1] = result[1];
 }
 
+/**
+* Helper function to assign new amplitudes after applying a quantum gate
+* @param: pQ - a pointer to a qubit
+* @param: statevector - the new statevector to be assigned to the qubit
+*/
 void assignAmplitudes(struct qubit* pQ, double statevector[]) {
-  // Interval = 1000 - (probability * 1000)
-  // If the probability is 0, the interval will be -1 to indicate that the LED will not light up
   pQ->ampKet0 = statevector[0];
   pQ->ampKet1 = statevector[1];
 }
