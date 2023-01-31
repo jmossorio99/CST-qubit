@@ -80,6 +80,11 @@ void assignAmplitudes(struct qubit* pQ, double statevector[]) {
   pQ->ampKet1 = statevector[1];
 }
 
+/**
+* The H function applies the Hadamard Gate to the given qubit. For example, a qubit in state |0> will be in an equal superposition after applying this gate
+* It applies the gate by multiplying the Hadamard matrix by the qubit's statevector. This is the same principle for the X and measure gates.
+* @param: pQ - pointer to the qubit
+*/
 void H(struct qubit* pQ) {
   double H[2][2] = { { 1.0 / sqrt(2), 1.0 / sqrt(2) }, { 1.0 / sqrt(2), -1.0 / sqrt(2) } };
   double statevector[2] = { pQ->ampKet0, pQ->ampKet1 };
@@ -90,6 +95,10 @@ void H(struct qubit* pQ) {
   previousMillis1 = 0;
 }
 
+/**
+* The X function applies the Not Gate to the given qubit. For example, a qubit in state |0> will be in state |1> after applying this gate.
+* @param: pQ - pointer to the qubit
+*/
 void X(struct qubit* pQ) {
   double X[2][2] = { { 0.0, 1.0 }, { 1.0, 0.0 } };
   double statevector[2] = { pQ->ampKet0, pQ->ampKet1 };
@@ -99,6 +108,10 @@ void X(struct qubit* pQ) {
   previousMillis1 = 0;
 }
 
+/**
+* The measure function measures a qubit, collapsing its state to 0 or 1
+* @param: pQ - pointer to the qubit
+*/
 void measure(struct qubit* pQ) {
   double statevector[2] = { 0.0, 0.0 };
   if (chance(prob(pQ->ampKet0) * 100, 100)) {
@@ -114,25 +127,34 @@ void measure(struct qubit* pQ) {
   previousMillis1 = 0;
 }
 
+// Initializing the qubit with arbitrary initial values
 qubit q0 = { 2, 3, 4, LOW, LOW, 0.38, 0.92, -1, -1};
+// Initializing a pointer to the qubit to be passed to functions
 qubit* pQ0 = &q0;
 
 void setup() {
   Serial.begin(9600);
+    // Initialize random seed for random function
   randomSeed(analogRead(A0));
+
+  // Setting the initial intervals for the qubit. If the interval is 0, it means the led is always on.
+  // The interval is equal to 1000ms - (probability(|0>) * 100), for ket 0
   q0.intervalKet0 = prob(q0.ampKet0) == 0 ? -1.0 : (1000 - prob(q0.ampKet0) * 1000);
   q0.intervalKet1 = prob(q0.ampKet1) == 0 ? -1.0 : (1000 - prob(q0.ampKet1) * 1000);
 
+  // Setting output pins
   pinMode(q0.pinKet0, OUTPUT);
   pinMode(q0.pinKet1, OUTPUT);
   pinMode(q0.pinPhase, OUTPUT);
 
+  // Setting input pins for buttons
   pinMode(xBtnPin, INPUT_PULLUP);
   pinMode(hBtnPin, INPUT_PULLUP);
   pinMode(mBtnPin, INPUT_PULLUP);
 }
 
 void loop() {
+  // Getting currentMillis for the blinking of the leds
   unsigned long currentMillis = millis();
   // Calculate interval for each LED
   q0.intervalKet0 = prob(q0.ampKet0) == 0 ? -1 : (1000 - prob(q0.ampKet0) * 1000);
@@ -161,6 +183,7 @@ void loop() {
   digitalWrite(q0.pinKet0, q0.ledState0);
   digitalWrite(q0.pinKet1, q0.ledState1);
 
+  // Read button states
   int xBtnState = digitalRead(xBtnPin);
   int hBtnState = digitalRead(hBtnPin);
   int mBtnState = digitalRead(mBtnPin);
@@ -169,7 +192,6 @@ void loop() {
   // compare the buttonState to its previous state
   if (xBtnState != xLastBtnState) {
     if (xBtnState == LOW) {
-      // if the current state is HIGH then the button went from off to on:
       X(pQ0);
     }
     // Delay a little bit to avoid bouncing
@@ -181,7 +203,6 @@ void loop() {
   // compare the buttonState to its previous state
   if (hBtnState != hLastBtnState) {
     if (hBtnState == LOW) {
-      // if the current state is HIGH then the button went from off to on:
       H(pQ0);
     }
     // Delay a little bit to avoid bouncing
@@ -193,7 +214,6 @@ void loop() {
   // compare the buttonState to its previous state
   if (mBtnState != mLastBtnState) {
     if (mBtnState == HIGH) {
-      // if the current state is HIGH then the button went from off to on:
       measure(pQ0);
     }
     // Delay a little bit to avoid bouncing
@@ -202,6 +222,7 @@ void loop() {
   // save the current state as the last state, for next time through the loop
   mLastBtnState = mBtnState;
 
+  // This conditional checks if ket 0 or ket 1 have a phase of -1, and if so, it lights up the phase LED
   if (q0.ampKet0 < 0 || q0.ampKet1 < 0) {
     digitalWrite(q0.pinPhase, HIGH);
   } else {
